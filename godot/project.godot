@@ -1,0 +1,62 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=4
+
+_global_script_classes=[ {
+"base": "Reference",
+"class": "Connection",
+"language": "GDScript",
+"path": "res://shared/Connection.gd"
+}, {
+"base": "Reference",
+"class": "ImagePixelFilter",
+"language": "GDScript",
+"path": "res://ImagePixelFilters/ImagePixelFilter.gd"
+}, {
+"base": "PackedScene",
+"class": "Prefab",
+"language": "GDScript",
+"path": "res://addons/Prefab/Prefab.gd"
+}, {
+"base": "Node",
+"class": "TextureGenerator",
+"language": "GDScript",
+"path": "res://shared/TextureGenerator.gd"
+}, {
+"base": "Reference",
+"class": "TileSpec",
+"language": "GDScript",
+"path": "res://shared/TileSpec.gd"
+} ]
+_global_script_class_icons={
+"Connection": "",
+"ImagePixelFilter": "",
+"Prefab": "",
+"TextureGenerator": "",
+"TileSpec": ""
+}
+
+[application]
+
+config/name="wave_collapse"
+config/icon="res://icon.png"
+
+[autoload]
+
+TileManager="*res://shared/TileManager.tscn"
+TextureManager="*res://shared/TextureManager.tscn"
+ConnectionsManager="*res://shared/ConnectionsManager.tscn"
+
+[physics]
+
+common/enable_pause_aware_picking=true
+
+[rendering]
+
+environment/default_environment="res://default_env.tres"

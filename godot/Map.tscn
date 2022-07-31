@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://Map.gd" type="Script" id=1]
+
+[node name="Map" type="Node"]
+script = ExtResource( 1 )
+map_size = Vector2( 15, 10 )
+
+[node name="Camera" type="Camera" parent="."]
+transform = Transform( 1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 2, 0 )
+projection = 1
+current = true
+size = 3.0
