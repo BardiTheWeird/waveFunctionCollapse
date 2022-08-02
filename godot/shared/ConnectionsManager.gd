@@ -13,5 +13,13 @@ func get_possible_connections(key_center: String, direction: int) -> Array:
 	return possible_connections
 
 func add_connection(connection: Connection):
-	connections_dict[connection.key_center] = connection
-	connections_dict[connection.key_other] = connection.flipped()
+	if not (connection.key_center in connections_dict):
+		connections_dict[connection.key_center] = [connection]
+	else:
+		connections_dict[connection.key_center].append(connection)
+
+	connection = connection.flipped()	
+	if not (connection.key_center in connections_dict):
+		connections_dict[connection.key_center] = [connection]
+	else:
+		connections_dict[connection.key_center].append(connection)

@@ -1,12 +1,6 @@
 extends Node
 class_name TextureGenerator
 
-func create_texture(tile_spec: TileSpec):
-	for key in tile_image_filters.keys():
-		var image = create_image(tile_image_filters[key])
-		var texture = create_image_texture(image)
-		tile_textures[key] = texture
-
 func create_image(filters: Array) -> Image:
 	var image = Image.new()
 	image.create(16, 16, false, Image.FORMAT_RGBA8)
@@ -48,43 +42,3 @@ func set_pixel_for_filtered(image : Image, color : Color, filter_funcs : Array):
 			image.set_pixel(x, y, color)
 
 	image.unlock()
-
-
-var eighth = (Vector2.ONE * 16) / 8
-var lower_bound = eighth * 3
-var upper_bound = eighth * 5
-
-func in_bounds(x: int, lo: int, hi: int) -> bool:
-	return lo <= x and x < hi
-
-func x_in_bounds(x: int) -> bool:
-	return in_bounds(x, lower_bound.x, upper_bound.x)
-
-func y_in_bounds(y: int) -> bool:
-	return in_bounds(y, lower_bound.y, upper_bound.y)
-
-func always_true(_x: int, _y: int, _size: Vector2) -> bool:
-	return true
-
-func is_in_center_square(x: int, y: int, _size: Vector2) -> bool:
-	if x_in_bounds(x) and y_in_bounds(y):
-		return true
-	return false
-
-func is_on_vertical_line(x: int, _y: int, _size: Vector2) -> bool:
-	return x_in_bounds(x)
-
-func is_on_horizontal_line(_x: int, y: int, _size: Vector2) -> bool:
-	return y_in_bounds(y)
-
-func is_on_upper_vertical_line(x: int, y: int, _size: Vector2) -> bool:
-	return x_in_bounds(x) and y < upper_bound.y
-
-func is_on_lower_vertical_line(x: int, y: int, _size: Vector2) -> bool:
-	return x_in_bounds(x) and y >= lower_bound.y
-
-func is_on_left_horizontal_line(x: int, y: int, _size: Vector2) -> bool:
-	return y_in_bounds(y) and x < upper_bound.x
-
-func is_on_right_horizontal_line(x: int, y: int, _size: Vector2) -> bool:
-	return y_in_bounds(y) and x > lower_bound.x

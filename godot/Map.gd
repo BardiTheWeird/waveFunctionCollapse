@@ -6,8 +6,18 @@ onready var connection_manager = $"/root/ConnectionsManager"
 export (Vector2) var map_size = Vector2(10, 5)
 const tile_size = 1
 var map = []
+var collapse_map = []
+class CollapseTile:
+	var possible_tile_keys = {}
 
+	func _init(possible_tile_keys_: Array):
+		for key in possible_tile_keys_:
+			possible_tile_keys[key] = true
+
+var fallback_key = "filled"
 var tile_spec_arr = [
+	TileSpec.new(fallback_key, [ImagePixelFilter.AlwayTrue.new()]),
+
 	TileSpec.new("empty", []),
 
 	TileSpec.new("center_square", [ImagePixelFilter.IsInCenterSquare.new()]),
@@ -112,9 +122,12 @@ var tile_connections = [
 func _ready():
 	for spec in tile_spec_arr:
 		tile_manager.add_tile_spec(spec)
+	for connection in tile_connections:
+		connection_manager.add_connection(connection)
 
 	initialize_map()
-	fill_map()
+	initialize_collapse_map()
+	# fill_map()
 	set_camera_to_map()
 
 func map_to_world_coordinatesv(map_coordinates: Vector2) -> Vector3:
@@ -123,11 +136,106 @@ func map_to_world_coordinatesv(map_coordinates: Vector2) -> Vector3:
 func map_to_world_coordinates(x: int, y: int) -> Vector3:
 	return Vector3(x * tile_size, 0, y * tile_size)
 
+func get_map_tilev(map: Array, coordinates: Vector2):
+	if coordinates.x < 0 || map.size() <= coordinates.x:
+		return null
+		
+	var column = map[coordinates.x]
+	if coordinates.y < 0 || column.size() <= coordinates.y:
+		return null
+
+	return column[coordinates.y]
+
+func set_map_tilev(map: Array, coordinates: Vector2, new_tile):
+	map[coordinates.x][coordinates.y] = new_tile
+
 func initialize_map():
 	map.resize(map_size.x)
-	for element in map:
-		element = []
-		element.resize(map_size.y)
+	for x in map.size():
+		map[x] = []
+		map[x].resize(map_size.y)
+
+func initialize_collapse_map():
+	var tile_keys = tile_manager.tile_spec_dict.keys()
+
+	collapse_map.resize(map_size.x)
+	for x in range(collapse_map.size()):
+		collapse_map[x] = []
+		collapse_map[x].resize(map_size.y)
+		for y in range(collapse_map[x].size()):
+			collapse_map[x][y] = CollapseTile.new(tile_keys)
+
+# return true if wave function collapse is done
+func collapse_step() -> bool:
+	print_debug('starting debug step')
+	var least_available_variations_tile_coordinates = null
+	var least_available_variations_tile_variations = tile_manager.tile_spec_dict.size() + 1
+	for x in range(collapse_map.size()):
+		var column = collapse_map[x]
+		for y in range(column.size()):
+			var collapse_tile : CollapseTile = collapse_map[x][y]
+			if collapse_tile == null:
+				continue
+
+			var available_variations = collapse_tile.possible_tile_keys.size()
+			if available_variations < least_available_variations_tile_variations:
+				least_available_variations_tile_coordinates = Vector2(x, y)
+				least_available_variations_tile_variations = available_variations
+
+	print_debug('finished looking into which tile has the smallest entropy')
+	print_debug(least_available_variations_tile_coordinates)
+
+	if least_available_variations_tile_coordinates == null:
+		return true
+
+	# collapse a tile
+	var collapse_tile : CollapseTile = get_map_tilev(collapse_map, least_available_variations_tile_coordinates)
+	var possible_key_amount = collapse_tile.possible_tile_keys.size()
+	var collapsed_key: String = fallback_key
+	var fell_back = true
+	if collapse_tile.possible_tile_keys.size() > 0:
+		collapsed_key = collapse_tile.possible_tile_keys.keys()[randi() % collapse_tile.possible_tile_keys.size()]
+		fell_back = false
+
+	var tile : Spatial = tile_manager.create_tile(tile_manager.tile_spec_dict[collapsed_key])
+	set_map_tilev(map, least_available_variations_tile_coordinates, tile)
+	set_map_tilev(collapse_map, least_available_variations_tile_coordinates, null)
+	tile.translation = map_to_world_coordinatesv(least_available_variations_tile_coordinates)
+	add_child(tile)
+	print_debug('created and added a tile with key %s', collapsed_key)
+
+	if not fell_back:
+		# update adjacent collapse tiles
+		var neighbour_tile_coordinates_directions = [
+			[least_available_variations_tile_coordinates + Vector2(1, 0), Connection.Direction.LEFT],
+			[least_available_variations_tile_coordinates - Vector2(1, 0), Connection.Direction.RIGHT],
+			[least_available_variations_tile_coordinates + Vector2(0, 1), Connection.Direction.UP],
+			[least_available_variations_tile_coordinates - Vector2(0, 1), Connection.Direction.DOWN],
+		]
+		
+		print_debug(neighbour_tile_coordinates_directions)
+
+		for neighbour in neighbour_tile_coordinates_directions:
+			update_tile_after_neighbour_collapse(neighbour[0], collapsed_key, neighbour[1])
+
+	return false
+
+func update_tile_after_neighbour_collapse(tile_coordinates: Vector2, collapsed_neighbour_key: String, direction_from_neighbour: int):
+
+	var tile : CollapseTile = get_map_tilev(collapse_map, tile_coordinates)
+	if not tile:
+		return
+
+	var possible_connections_from_neighbour = connection_manager.get_possible_connections(
+		collapsed_neighbour_key, direction_from_neighbour)
+		
+	print_debug('lowering entropy for tile at %s' % str(tile_coordinates))
+	print_debug('possible connections before: %s' % str(tile.possible_tile_keys))
+	print_debug('possible connections to neighbour: %s' % str(possible_connections_from_neighbour))
+
+	for connection in tile.possible_tile_keys.keys():
+		if not (connection in possible_connections_from_neighbour):
+			tile.possible_tile_keys.erase(connection)
 
 func fill_map():
 	var spec = tile_manager.tile_spec_dict["center_square"]
@@ -137,10 +245,11 @@ func fill_map():
 			var tile = tile_manager.create_tile(spec)
 			tile.scale *= 0.95
 			tile.translation = map_to_world_coordinates(x, y)
+			map[x][y] = tile
 			add_child(tile)
 
 func set_camera_to_map():
-	$Camera.size = max(map_size.x, map_size.y) * 0.7
+	$Camera.size = max(map_size.x, map_size.y)
 	$Camera.translation.x = tile_size * (map_size.x - 1) / 2
 	$Camera.translation.z = tile_size * (map_size.y - 1) / 2
 
@@ -155,3 +264,7 @@ func visualize_arr_of_all_tiles():
 	var camera_size = i * 0.7
 	$Camera.size = camera_size
 	$Camera.translation.x = i / 2
+
+
+func _on_Button_pressed():
+	collapse_step()
