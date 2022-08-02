@@ -20,3 +20,7 @@ func create_tile(spec: TileSpec) -> Spatial:
 	mesh.set_surface_material(0, material)
 
 	return tile
+
+func create_tile_from_key(key: String) -> Spatial:
+	var spec = tile_spec_dict[key]
+	return create_tile(spec)

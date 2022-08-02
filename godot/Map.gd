@@ -1,4 +1,5 @@
 extends Node
+class_name Map
 
 onready var tile_manager  = $"/root/TileManager"
 onready var connection_manager = $"/root/ConnectionsManager"
@@ -125,10 +126,23 @@ func _ready():
 	for connection in tile_connections:
 		connection_manager.add_connection(connection)
 
-	initialize_map()
-	initialize_collapse_map()
-	# fill_map()
+func draw_single_tile(tile_key: String):
+	initialize_map(Vector2(1,1))
+	var tile = tile_manager.create_tile_from_key(tile_key)
+	map[0][0] = tile
+	add_child(tile)
+
 	set_camera_to_map()
+
+func draw_all_tile_connections(tile_key: String):
+	pass
+
+func clear_map():
+	for column in map:
+		for tile in column:
+			if tile:
+				tile.queue_free()
+	map = []
 
 func map_to_world_coordinatesv(map_coordinates: Vector2) -> Vector3:
 	return map_to_world_coordinates(map_coordinates.x, map_coordinates.y)
@@ -149,21 +163,29 @@ func get_map_tilev(map: Array, coordinates: Vector2):
 func set_map_tilev(map: Array, coordinates: Vector2, new_tile):
 	map[coordinates.x][coordinates.y] = new_tile
 
-func initialize_map():
-	map.resize(map_size.x)
+func initialize_map(size = null):
+	if size == null:
+		size = map_size
+
+	clear_map()
+	map.resize(size.x)
 	for x in map.size():
 		map[x] = []
-		map[x].resize(map_size.y)
+		map[x].resize(size.y)
 
-func initialize_collapse_map():
+func initialize_collapse():
+	initialize_map()
 	var tile_keys = tile_manager.tile_spec_dict.keys()
 
+	collapse_map = []
 	collapse_map.resize(map_size.x)
 	for x in range(collapse_map.size()):
 		collapse_map[x] = []
 		collapse_map[x].resize(map_size.y)
 		for y in range(collapse_map[x].size()):
 			collapse_map[x][y] = CollapseTile.new(tile_keys)
+
+	set_camera_to_map()
 
 # return true if wave function collapse is done
 func collapse_step() -> bool:
@@ -249,6 +271,10 @@ func fill_map():
 			add_child(tile)
 
 func set_camera_to_map():
+	var map_size = Vector2(map.size(), 0)
+	if map.size() > 0:
+		map_size.y = map[0].size()
+
 	$Camera.size = max(map_size.x, map_size.y)
 	$Camera.translation.x = tile_size * (map_size.x - 1) / 2
 	$Camera.translation.z = tile_size * (map_size.y - 1) / 2
