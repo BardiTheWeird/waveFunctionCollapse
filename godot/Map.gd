@@ -42,8 +42,8 @@ var tile_connections = [
 	Connection.new("center_square", "empty", Connection.ALL_DIRECTIONS),
 	Connection.new("vertical_line", "empty", Connection.HORIZONTAL_DIRECTIONS),
 	Connection.new("horizontal_line", "empty", Connection.VERTICAL_DIRECTIONS),
-	Connection.new("upper_vertical", "empty", Connection.HORIZONTAL_DIRECTIONS + [Connection.Direction.DOWN]),
-	Connection.new("lower_vertical", "empty", Connection.HORIZONTAL_DIRECTIONS + [Connection.Direction.UP]),
+	Connection.new("upper_vertical_line", "empty", Connection.HORIZONTAL_DIRECTIONS + [Connection.Direction.DOWN]),
+	Connection.new("lower_vertical_line", "empty", Connection.HORIZONTAL_DIRECTIONS + [Connection.Direction.UP]),
 	Connection.new("left_horizontal_line", "empty", Connection.VERTICAL_DIRECTIONS + [Connection.Direction.RIGHT]),
 	Connection.new("right_horizontal_line", "empty", Connection.VERTICAL_DIRECTIONS + [Connection.Direction.LEFT]),
 	Connection.new("up_right_turn", "empty", [Connection.Direction.DOWN, Connection.Direction.LEFT]),
@@ -54,8 +54,8 @@ var tile_connections = [
 	# center square
 	Connection.new("vertical_line", "center_square", Connection.HORIZONTAL_DIRECTIONS),
 	Connection.new("horizontal_line", "center_square", Connection.VERTICAL_DIRECTIONS),
-	Connection.new("upper_vertical", "center_square", Connection.HORIZONTAL_DIRECTIONS + [Connection.Direction.DOWN]),
-	Connection.new("lower_vertical", "center_square", Connection.HORIZONTAL_DIRECTIONS + [Connection.Direction.UP]),
+	Connection.new("upper_vertical_line", "center_square", Connection.HORIZONTAL_DIRECTIONS + [Connection.Direction.DOWN]),
+	Connection.new("lower_vertical_line", "center_square", Connection.HORIZONTAL_DIRECTIONS + [Connection.Direction.UP]),
 	Connection.new("left_horizontal_line", "center_square", Connection.VERTICAL_DIRECTIONS + [Connection.Direction.RIGHT]),
 	Connection.new("right_horizontal_line", "center_square", Connection.VERTICAL_DIRECTIONS + [Connection.Direction.LEFT]),
 	Connection.new("up_right_turn", "center_square", [Connection.Direction.DOWN, Connection.Direction.LEFT]),
@@ -64,8 +64,8 @@ var tile_connections = [
 	Connection.new("down_left_turn", "center_square", [Connection.Direction.UP, Connection.Direction.RIGHT]),
 
 	# vertical_line
-	Connection.new("upper_vertical", "vertical_line", [Connection.Direction.UP]),
-	Connection.new("lower_vertical", "vertical_line", [Connection.Direction.DOWN]),
+	Connection.new("upper_vertical_line", "vertical_line", [Connection.Direction.UP]),
+	Connection.new("lower_vertical_line", "vertical_line", [Connection.Direction.DOWN]),
 	Connection.new("cross", "vertical_line", Connection.VERTICAL_DIRECTIONS),
 	Connection.new("up_right_turn", "vertical_line", [Connection.Direction.UP]),
 	Connection.new("up_left_turn", "vertical_line", [Connection.Direction.UP]),
@@ -134,8 +134,27 @@ func draw_single_tile(tile_key: String):
 
 	set_camera_to_map()
 
-func draw_all_tile_connections(tile_key: String):
-	pass
+func draw_all_tile_connections(center_tile_key: String):
+	var connections = connection_manager.get_possible_connections_all_directions(center_tile_key)
+	var map_size = Vector2(connections.size()*3 + connections.size()-1, 3)
+	initialize_map(map_size)
+
+	var center_x = 1
+	for connection in connections:
+		var center_tile_coordinates = Vector2(center_x, 1)
+		var center_tile = create_tile_at_map_coordinatesv(center_tile_key, center_tile_coordinates)
+		center_tile.get_node("Mesh").get_surface_material(0).albedo_color = Color(100,0,0)
+		add_child(center_tile)
+
+		var connection_tile_key = connection.key_other
+		for offset in connection.directions_to_offsets():
+			var tile = create_tile_at_map_coordinatesv(connection_tile_key, center_tile_coordinates + offset)
+			add_child(tile)
+
+		center_x += 4
+
+	set_camera_to_map()
+		
 
 func clear_map():
 	for column in map:
@@ -243,7 +262,6 @@ func collapse_step() -> bool:
 	return false
 
 func update_tile_after_neighbour_collapse(tile_coordinates: Vector2, collapsed_neighbour_key: String, direction_from_neighbour: int):
-
 	var tile : CollapseTile = get_map_tilev(collapse_map, tile_coordinates)
 	if not tile:
 		return
@@ -291,6 +309,8 @@ func visualize_arr_of_all_tiles():
 	$Camera.size = camera_size
 	$Camera.translation.x = i / 2
 
-
-func _on_Button_pressed():
-	collapse_step()
+func create_tile_at_map_coordinatesv(tile_key: String, map_coordinates: Vector2) -> Spatial:
+	var tile = tile_manager.create_tile_from_key(tile_key)
+	tile.translation = map_to_world_coordinatesv(map_coordinates)
+	set_map_tilev(map, map_coordinates, tile)
+	return tile

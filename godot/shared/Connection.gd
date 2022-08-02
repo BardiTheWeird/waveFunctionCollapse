@@ -7,6 +7,13 @@ enum Direction {
 	LEFT,
 }
 
+const direction_to_offset_dict = {
+	Direction.UP: Vector2(0, -1),
+	Direction.RIGHT: Vector2(1, 0),
+	Direction.DOWN: Vector2(0, 1),
+	Direction.LEFT: Vector2(-1, 0),
+}
+
 const ALL_DIRECTIONS = [
 	Direction.UP,
 	Direction.RIGHT,
@@ -34,6 +41,13 @@ var flipped_directions_dict = {
 var key_center: String
 var key_other: String
 var directions: Array
+
+func directions_to_offsets() -> Array:
+	var offsets = []
+	for direction in directions:
+		offsets.append(direction_to_offset_dict[direction])
+
+	return offsets
 
 func flipped() -> Connection:
 	var flipped_dicretions = []

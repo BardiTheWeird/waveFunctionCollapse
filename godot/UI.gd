@@ -33,7 +33,8 @@ func _on_InspectTile_pressed():
 
 func _on_InspectTileConnections_pressed():
 	populate_tile_list()
-	pass # Replace with function body.
+	$TileList.show()
+	state = State.ChoosingTileToInspectConnections
 
 func _on_TileList_item_selected(index):
 	$TileList.hide()

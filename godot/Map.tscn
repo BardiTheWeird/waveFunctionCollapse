@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=2]
+[gd_scene load_steps=3 format=2]
 
 [ext_resource path="res://Map.gd" type="Script" id=1]
+[ext_resource path="res://UI.gd" type="Script" id=2]
 
 [node name="Map" type="Node"]
 script = ExtResource( 1 )
@@ -15,6 +16,7 @@ size = 3.0
 [node name="UI" type="Control" parent="."]
 margin_right = 40.0
 margin_bottom = 40.0
+script = ExtResource( 2 )
 
 [node name="StartCollapse" type="Button" parent="UI"]
 margin_left = 83.0
@@ -41,7 +43,7 @@ margin_right = 518.0
 margin_bottom = 590.0
 text = "Inspect Tile"
 
-[node name="Inspect Tile Connections" type="Button" parent="UI"]
+[node name="InspectTileConnections" type="Button" parent="UI"]
 margin_left = 544.0
 margin_top = 532.0
 margin_right = 756.0
@@ -59,4 +61,8 @@ margin_top = 57.0
 margin_right = 601.0
 margin_bottom = 388.0
 
-[connection signal="pressed" from="UI/CollapseStep" to="." method="_on_Button_pressed"]
+[connection signal="pressed" from="UI/StartCollapse" to="UI" method="_on_StartCollapse_pressed"]
+[connection signal="pressed" from="UI/CollapseStep" to="UI" method="_on_CollapseStep_pressed"]
+[connection signal="pressed" from="UI/InspectTile" to="UI" method="_on_InspectTile_pressed"]
+[connection signal="pressed" from="UI/InspectTileConnections" to="UI" method="_on_InspectTileConnections_pressed"]
+[connection signal="item_selected" from="UI/TileList" to="UI" method="_on_TileList_item_selected"]

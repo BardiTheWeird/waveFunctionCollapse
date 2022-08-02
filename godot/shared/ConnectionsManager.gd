@@ -3,6 +3,11 @@ extends Node
 # center_key -> [Connection]
 var connections_dict = {}
 
+func get_possible_connections_all_directions(key_center: String) -> Array:
+	if not (key_center in connections_dict):
+		return []
+	return connections_dict[key_center]
+
 func get_possible_connections(key_center: String, direction: int) -> Array:
 	if not (key_center in connections_dict.keys()):
 		return []
