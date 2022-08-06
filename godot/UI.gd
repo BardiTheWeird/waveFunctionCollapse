@@ -3,6 +3,7 @@ extends Control
 enum State {
 	Idle,
 	Collapsing,
+	PlayingOutCollapse,
 	ChoosingTileToInspect,
 	InspectingTile,
 	ChoosingTileToInspectConnections,
@@ -15,9 +16,9 @@ var state = State.Idle
 
 var tile_list = []
 
-# Called when the node enters the scene tree for the first time.
-func _ready():
-	pass
+func _process(delta):
+	if Input.is_action_just_pressed("ui_hide"):
+		visible = !visible
 
 func _on_StartCollapse_pressed():
 	state = State.Collapsing
@@ -25,6 +26,9 @@ func _on_StartCollapse_pressed():
 
 func _on_CollapseStep_pressed():
 	map.collapse_step()
+	
+func _on_PlayOutCollapse_pressed():
+	map.play_out_collapse()
 
 func _on_InspectTile_pressed():
 	populate_tile_list()

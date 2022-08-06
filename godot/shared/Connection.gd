@@ -31,12 +31,15 @@ const VERTICAL_DIRECTIONS = [
 	Direction.DOWN,
 ]
 
-var flipped_directions_dict = {
+const flipped_directions_dict = {
 	Direction.UP: Direction.DOWN,
 	Direction.DOWN: Direction.UP,
 	Direction.LEFT: Direction.RIGHT,
 	Direction.RIGHT: Direction.LEFT,
 }
+
+static func get_direction_flipped(direction: int) -> int:
+	return flipped_directions_dict[direction]
 
 var key_center: String
 var key_other: String

@@ -1,6 +1,12 @@
 extends Node
 class_name Map
 
+enum CollapseStepStatus {
+	Ok,
+	FellBack,
+	Finished,
+}
+
 onready var tile_manager  = $"/root/TileManager"
 onready var connection_manager = $"/root/ConnectionsManager"
 
@@ -17,7 +23,7 @@ class CollapseTile:
 
 var fallback_key = "filled"
 var tile_spec_arr = [
-	TileSpec.new(fallback_key, [ImagePixelFilter.AlwayTrue.new()]),
+	TileSpec.new(fallback_key, [ImagePixelFilter.AlwayTrue.new()], Color(50,0,0)),
 
 	TileSpec.new("empty", []),
 
@@ -121,10 +127,12 @@ var tile_connections = [
 ]
 
 func _ready():
+	randomize()
 	for spec in tile_spec_arr:
 		tile_manager.add_tile_spec(spec)
-	for connection in tile_connections:
-		connection_manager.add_connection(connection)
+	# for connection in tile_connections:
+	# 	connection_manager.add_connection(connection)
+	connection_manager.generate_connections(tile_spec_arr)
 
 func draw_single_tile(tile_key: String):
 	initialize_map(Vector2(1,1))
@@ -205,9 +213,17 @@ func initialize_collapse():
 			collapse_map[x][y] = CollapseTile.new(tile_keys)
 
 	set_camera_to_map()
+	
+func play_out_collapse():
+	$CollapseTimer.start()
+	
+func _on_CollapseTimer_timeout():
+	var step_status = collapse_step()
+	if step_status == CollapseStepStatus.Finished:
+		$CollapseTimer.stop()
 
 # return true if wave function collapse is done
-func collapse_step() -> bool:
+func collapse_step() -> int:
 	print_debug('starting debug step')
 	var least_available_variations_tile_coordinates = null
 	var least_available_variations_tile_variations = tile_manager.tile_spec_dict.size() + 1
@@ -227,7 +243,7 @@ func collapse_step() -> bool:
 	print_debug(least_available_variations_tile_coordinates)
 
 	if least_available_variations_tile_coordinates == null:
-		return true
+		return CollapseStepStatus.Finished
 
 	# collapse a tile
 	var collapse_tile : CollapseTile = get_map_tilev(collapse_map, least_available_variations_tile_coordinates)
@@ -245,21 +261,26 @@ func collapse_step() -> bool:
 	add_child(tile)
 	print_debug('created and added a tile with key %s', collapsed_key)
 
-	if not fell_back:
-		# update adjacent collapse tiles
-		var neighbour_tile_coordinates_directions = [
-			[least_available_variations_tile_coordinates + Vector2(1, 0), Connection.Direction.LEFT],
-			[least_available_variations_tile_coordinates - Vector2(1, 0), Connection.Direction.RIGHT],
-			[least_available_variations_tile_coordinates + Vector2(0, 1), Connection.Direction.UP],
-			[least_available_variations_tile_coordinates - Vector2(0, 1), Connection.Direction.DOWN],
-		]
-		
-		print_debug(neighbour_tile_coordinates_directions)
+	if fell_back:
+		return CollapseStepStatus.FellBack
 
-		for neighbour in neighbour_tile_coordinates_directions:
-			update_tile_after_neighbour_collapse(neighbour[0], collapsed_key, neighbour[1])
+	# update adjacent collapse tiles
+	var directions = Connection.ALL_DIRECTIONS
+	var neighbour_tile_coordinates_directions = []
+	for direction in directions:
+		neighbour_tile_coordinates_directions.append(
+			[
+				least_available_variations_tile_coordinates + Connection.direction_to_offset_dict[direction],
+				direction
+			]
+		)
+	
+	print_debug(neighbour_tile_coordinates_directions)
 
-	return false
+	for neighbour in neighbour_tile_coordinates_directions:
+		update_tile_after_neighbour_collapse(neighbour[0], collapsed_key, neighbour[1])
+
+	return CollapseStepStatus.Ok
 
 func update_tile_after_neighbour_collapse(tile_coordinates: Vector2, collapsed_neighbour_key: String, direction_from_neighbour: int):
 	var tile : CollapseTile = get_map_tilev(collapse_map, tile_coordinates)
